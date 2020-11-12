@@ -209,14 +209,13 @@ func pushImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func healthz(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte("ok"))
+	success(w)
 }
 
 func success(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Add("Content-Type", "application/json")
-	_, err := w.Write([]byte(`{"status": 200, "message": "success"}`))
+	_, err := w.Write([]byte(`{"status": 200, "message": "success"}` + "\n"))
 	if err != nil {
 		logger.Errorf("[http] write response failed: %s", err)
 	}
