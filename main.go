@@ -27,10 +27,10 @@ func main() {
 				Value:   "0.0.0.0:8080",
 			},
 			&cli.StringFlag{
-				Name:    "token",
-				Usage:   "Server push token",
-				EnvVars: []string{"TELEPUSH_TOKEN"},
-				Value:   "",
+				Name:     "token",
+				Usage:    "Server push token",
+				EnvVars:  []string{"TELEPUSH_TOKEN"},
+				Required: true,
 			},
 			&cli.StringFlag{
 				Name:    "bot-api",
@@ -39,9 +39,10 @@ func main() {
 				Value:   "https://api.telegram.org",
 			},
 			&cli.StringFlag{
-				Name:    "bot-token",
-				Usage:   "Telegram api token",
-				EnvVars: []string{"TELEPUSH_BOT_TOKEN"},
+				Name:     "bot-token",
+				Usage:    "Telegram api token",
+				EnvVars:  []string{"TELEPUSH_BOT_TOKEN"},
+				Required: true,
 			},
 		},
 		Authors: []*cli.Author{
@@ -57,6 +58,12 @@ func main() {
 				BotApiAddr:  c.String("bot-api"),
 				BotApiToken: c.String("bot-token"),
 			}
+			var err error
+			bot, err = NewTelegram(conf.BotApiAddr, conf.BotApiToken)
+			if err != nil {
+				return err
+			}
+			logger.Info("Telegram Bot init success...")
 			Serve()
 			return nil
 		},

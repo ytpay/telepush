@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
@@ -59,7 +60,7 @@ func Serve() {
 func authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header == nil || r.Header.Get("X-Token") != conf.Token {
-			logger.Warnf("Forbidden: IP[%s], URI[%]", getIP(r), r.RequestURI)
+			logger.Warnf("Forbidden: IP[%s], URI[%s]", getIP(r), r.RequestURI)
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
@@ -78,10 +79,6 @@ func getIP(r *http.Request) string {
 func pushTxt(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		logger.Errorf("[txt] %s", err)
-		return
-	}
-	if strings.TrimSpace(r.FormValue("type")) != "txt" {
-		http.Error(w, "bad request type", http.StatusBadRequest)
 		return
 	}
 
@@ -115,15 +112,12 @@ func pushTxt(w http.ResponseWriter, r *http.Request) {
 			}
 		}(bot, int64(id), msg, md)
 	}
+	success(w)
 }
 
 func pushFile(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		logger.Errorf("[file] %s", err)
-		return
-	}
-	if strings.TrimSpace(r.FormValue("type")) != "file" {
-		http.Error(w, "bad request type", http.StatusBadRequest)
 		return
 	}
 
@@ -140,6 +134,10 @@ func pushFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() { _ = file.Close() }()
+
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, file)
+	bs := buf.Bytes()
 
 	mime := strings.TrimSpace(r.FormValue("mime"))
 	caption := strings.TrimSpace(r.FormValue("caption"))
@@ -162,17 +160,14 @@ func pushFile(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				logger.Errorf("[file] file send failed, id: %d", id)
 			}
-		}(bot, int64(id), file, filename, mime, caption)
+		}(bot, int64(id), bytes.NewReader(bs), filename, mime, caption)
 	}
+	success(w)
 }
 
 func pushImage(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		logger.Errorf("[image] %s", err)
-		return
-	}
-	if strings.TrimSpace(r.FormValue("type")) != "file" {
-		http.Error(w, "bad request type", http.StatusBadRequest)
 		return
 	}
 
@@ -183,6 +178,10 @@ func pushImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() { _ = image.Close() }()
+
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, image)
+	bs := buf.Bytes()
 
 	caption := strings.TrimSpace(r.FormValue("caption"))
 
@@ -204,11 +203,21 @@ func pushImage(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				logger.Errorf("[image] image send failed, id: %d", id)
 			}
-		}(bot, int64(id), image, caption)
+		}(bot, int64(id), bytes.NewReader(bs), caption)
 	}
+	success(w)
 }
 
 func healthz(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("ok"))
+}
+
+func success(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusOK)
+	w.Header().Add("Content-Type", "application/json")
+	_, err := w.Write([]byte(`{"status": 200, "message": "success"}`))
+	if err != nil {
+		logger.Errorf("[http] write response failed: %s", err)
+	}
 }

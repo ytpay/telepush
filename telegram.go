@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -28,10 +29,16 @@ func NewTelegram(api, token string) (*Telegram, error) {
 
 func (tg *Telegram) ID() {
 	tg.bot.Handle("/id", func(m *tb.Message) {
-		if !m.Private() {
-			_, _ = tg.bot.Send(m.Sender, m.Sender.ID)
+		if m.Private() {
+			_, err := tg.bot.Send(m.Sender, fmt.Sprintf("`User ID: %d`", m.Sender.ID), &tb.SendOptions{ParseMode: tb.ModeMarkdown})
+			if err != nil {
+				logger.Errorf("[bot] request user id: %s", err)
+			}
 		} else {
-			_, _ = tg.bot.Send(m.Chat, m.Chat.ID)
+			_, err := tg.bot.Send(m.Chat, fmt.Sprintf("`Chat ID: %d`", m.Chat.ID), &tb.SendOptions{ParseMode: tb.ModeMarkdown})
+			if err != nil {
+				logger.Errorf("[bot] request chat id: %s", err)
+			}
 		}
 	})
 	tg.bot.Start()
