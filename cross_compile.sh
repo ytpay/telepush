@@ -12,9 +12,9 @@ mkdir ${TARGET_DIR}
 for pl in ${PLATFORMS}; do
     export GOOS=$(echo ${pl} | cut -d'/' -f1)
     export GOARCH=$(echo ${pl} | cut -d'/' -f2)
-    export TARGET=${TARGET_DIR}/telepush_${GOOS}_${GOARCH}
+    export TARGET=${TARGET_DIR}/$(echo ${PWD##*/})_${GOOS}_${GOARCH}
     if [ "${GOOS}" == "windows" ]; then
-        export TARGET=${TARGET_DIR}/tgsend_${GOOS}_${GOARCH}.exe
+        export TARGET=${TARGET_DIR}/$(echo ${PWD##*/})_${GOOS}_${GOARCH}.exe
     fi
 
     echo "build => ${TARGET}"
