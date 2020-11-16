@@ -8,6 +8,9 @@ all:
 release: clean all
 	ghr -u mritd -t ${GITHUB_TOKEN} -replace -recreate -name "Bump ${BUILD_VERSION}" --debug ${BUILD_VERSION} dist
 
+docker:
+	docker build -t ytpay/telepush:${BUILD_VERSION} .
+
 clean:
 	rm -rf dist
 
