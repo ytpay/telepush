@@ -35,5 +35,3 @@ RUN set -ex \
 COPY --from=builder /go/bin/telepush /usr/bin/telepush
 
 ENTRYPOINT ["telepush"]
-
-CMD ["--help"]
